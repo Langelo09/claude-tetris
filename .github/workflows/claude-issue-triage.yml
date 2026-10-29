@@ -56,6 +56,10 @@ jobs:
                - ## Criterios de aceptación
                - ## Dudas abiertas (solo si el issue es ambiguo)
                El diagnóstico servirá al equipo para implementar después la solución.
+               Todo lo que escribas en `diagnostico.md` se publicará como comentario en GitHub, así que
+               debe estar en formato Markdown que GitHub entienda (GitHub Flavored Markdown): encabezados
+               con `#`, listas con `-` o `1.`, código en línea con comillas invertidas y bloques de código
+               con ``` y lenguaje. No uses HTML ni sintaxis que GitHub no renderice.
             5. No modifiques ningún otro archivo, no hagas commits ni comentarios: el comentario lo
                publica un paso posterior del workflow.
           claude_args: |
