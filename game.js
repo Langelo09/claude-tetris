@@ -283,30 +283,98 @@ function init() {
   animId = requestAnimationFrame(loop);
 }
 
+function moveBy(dx) {
+  if (!collide(current.shape, current.x + dx, current.y)) current.x += dx;
+}
+
+function doAction(action) {
+  if (paused || gameOver) return;
+  switch (action) {
+    case 'left': moveBy(-1); break;
+    case 'right': moveBy(1); break;
+    case 'down': softDrop(); break;
+    case 'rotate': tryRotate(); break;
+    case 'drop': hardDrop(); break;
+  }
+  updateHUD();
+}
+
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') { togglePause(); return; }
-  if (paused || gameOver) return;
   switch (e.code) {
-    case 'ArrowLeft':
-      if (!collide(current.shape, current.x - 1, current.y)) current.x--;
-      break;
-    case 'ArrowRight':
-      if (!collide(current.shape, current.x + 1, current.y)) current.x++;
-      break;
-    case 'ArrowDown':
-      softDrop();
-      break;
+    case 'ArrowLeft': doAction('left'); break;
+    case 'ArrowRight': doAction('right'); break;
+    case 'ArrowDown': doAction('down'); break;
     case 'ArrowUp':
     case 'KeyX':
-      tryRotate();
+      doAction('rotate');
       break;
     case 'Space':
       e.preventDefault();
-      hardDrop();
+      doAction('drop');
       break;
   }
-  updateHUD();
 });
+
+// ---- Controles táctiles ----
+const REPEAT_ACTIONS = ['left', 'right', 'down'];
+let repeatDelay, repeatTimer;
+
+function stopRepeat() {
+  clearTimeout(repeatDelay);
+  clearInterval(repeatTimer);
+}
+
+document.querySelectorAll('#touch-controls button').forEach(btn => {
+  const action = btn.dataset.action;
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (action === 'pause') { togglePause(); return; }
+    doAction(action);
+    if (REPEAT_ACTIONS.includes(action)) {
+      stopRepeat();
+      repeatDelay = setTimeout(() => {
+        repeatTimer = setInterval(() => doAction(action), 80);
+      }, 200);
+    }
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => btn.addEventListener(ev, stopRepeat));
+});
+
+// Gestos sobre el tablero: arrastrar = mover, tocar = rotar, deslizar hacia abajo = caída
+let gesture = null;
+
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  canvas.setPointerCapture(e.pointerId);
+  gesture = { x: e.clientX, y: e.clientY, lastX: e.clientX, moved: false };
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!gesture) return;
+  const cell = canvas.clientWidth / COLS;
+  while (Math.abs(e.clientX - gesture.lastX) >= cell) {
+    const dir = Math.sign(e.clientX - gesture.lastX);
+    doAction(dir < 0 ? 'left' : 'right');
+    gesture.lastX += dir * cell;
+    gesture.moved = true;
+  }
+});
+
+function endGesture(e) {
+  if (!gesture) return;
+  const dx = e.clientX - gesture.x;
+  const dy = e.clientY - gesture.y;
+  const cell = canvas.clientWidth / COLS;
+  if (e.type === 'pointerup' && !gesture.moved) {
+    if (Math.hypot(dx, dy) < 10) doAction('rotate');
+    else if (dy > cell * 3 && dy > Math.abs(dx) * 2) doAction('drop');
+  }
+  gesture = null;
+}
+
+canvas.addEventListener('pointerup', endGesture);
+canvas.addEventListener('pointercancel', endGesture);
 
 restartBtn.addEventListener('click', init);
 

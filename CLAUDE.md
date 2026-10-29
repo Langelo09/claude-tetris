@@ -25,4 +25,6 @@ Puntos de `game.js` que conviene saber antes de editar:
 
 - **Tema claro/oscuro**: los colores de la UI son variables CSS en `:root` (oscuro, por defecto) y `:root[data-theme="light"]`. `#theme-toggle` (checkbox) llama a `applyTheme()`, que fija `data-theme` y cachea `--grid`/`--highlight` en `gridColor`/`highlightColor` para `drawGrid()`/`drawBlock()`; luego se fuerza `draw()` y `drawNext()` (necesario en pausa/game over). No se persiste. Cualquier color nuevo debe añadirse a ambos temas.
 
+- **Móvil/táctil**: `doAction(action)` (`left|right|down|rotate|drop`) centraliza los movimientos; lo usan el teclado, los botones `#touch-controls` (`data-action`, con repetición para left/right/down) y los gestos sobre `#board` (arrastrar = mover, tocar = rotar, deslizar abajo = caída). Los botones solo se muestran en el media query móvil de `style.css`, que también reorganiza el layout (panel arriba, tablero escalado por CSS).
+
 Si cambias `COLS`, `ROWS` o `BLOCK`, actualiza también `width`/`height` del `<canvas id="board">` en `index.html` (`COLS*BLOCK` × `ROWS*BLOCK`). El tamaño de celda del canvas de vista previa (`NB = 30`) está fijo dentro de `drawNext()`.
