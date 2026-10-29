@@ -283,30 +283,114 @@ function init() {
   animId = requestAnimationFrame(loop);
 }
 
-document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+// Acciones de juego compartidas por teclado, botones táctiles y gestos
+function doAction(action) {
+  if (action === 'pause') { togglePause(); return; }
   if (paused || gameOver) return;
-  switch (e.code) {
-    case 'ArrowLeft':
+  switch (action) {
+    case 'left':
       if (!collide(current.shape, current.x - 1, current.y)) current.x--;
       break;
-    case 'ArrowRight':
+    case 'right':
       if (!collide(current.shape, current.x + 1, current.y)) current.x++;
       break;
-    case 'ArrowDown':
+    case 'down':
       softDrop();
       break;
-    case 'ArrowUp':
-    case 'KeyX':
+    case 'rotate':
       tryRotate();
       break;
-    case 'Space':
-      e.preventDefault();
+    case 'drop':
       hardDrop();
       break;
   }
   updateHUD();
+}
+
+const KEY_ACTIONS = {
+  KeyP: 'pause',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+  ArrowDown: 'down',
+  ArrowUp: 'rotate',
+  KeyX: 'rotate',
+  Space: 'drop',
+};
+
+document.addEventListener('keydown', e => {
+  const action = KEY_ACTIONS[e.code];
+  if (!action) return;
+  if (e.code === 'Space') e.preventDefault();
+  doAction(action);
 });
+
+// ---- Botones táctiles (con repetición al mantener pulsado) ----
+const REPEATABLE = new Set(['left', 'right', 'down']);
+const REPEAT_DELAY = 170;
+const REPEAT_RATE = 70;
+let repeatDelayId = null, repeatIntervalId = null;
+
+function stopRepeat() {
+  clearTimeout(repeatDelayId);
+  clearInterval(repeatIntervalId);
+  repeatDelayId = repeatIntervalId = null;
+}
+
+function startRepeat(action) {
+  stopRepeat();
+  doAction(action);
+  if (!REPEATABLE.has(action)) return;
+  repeatDelayId = setTimeout(() => {
+    repeatIntervalId = setInterval(() => doAction(action), REPEAT_RATE);
+  }, REPEAT_DELAY);
+}
+
+document.querySelectorAll('.touch-controls button').forEach(btn => {
+  const action = btn.dataset.action;
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    btn.setPointerCapture(e.pointerId);
+    startRepeat(action);
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type =>
+    btn.addEventListener(type, stopRepeat));
+  // activación por teclado/lector de pantalla (los toques ya se gestionan arriba)
+  btn.addEventListener('click', e => { if (e.detail === 0) doAction(action); });
+});
+
+// ---- Gestos sobre el tablero: arrastrar = mover, tocar = rotar, deslizar rápido abajo = caída ----
+const TAP_MAX_DIST = 10;   // px
+const TAP_MAX_TIME = 250;  // ms
+const FLICK_MIN_DIST = 60; // px
+let gesture = null;
+
+canvas.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  gesture = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: e.timeStamp, ax: e.clientX, ay: e.clientY };
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!gesture || e.pointerId !== gesture.id) return;
+  const cell = canvas.getBoundingClientRect().width / COLS;
+  while (e.clientX - gesture.ax >= cell) { doAction('right'); gesture.ax += cell; }
+  while (gesture.ax - e.clientX >= cell) { doAction('left'); gesture.ax -= cell; }
+  // arrastre lento hacia abajo = bajar celda a celda
+  while (e.clientY - gesture.ay >= cell) { doAction('down'); gesture.ay += cell; }
+});
+
+canvas.addEventListener('pointerup', e => {
+  if (!gesture || e.pointerId !== gesture.id) return;
+  const dx = e.clientX - gesture.x0;
+  const dy = e.clientY - gesture.y0;
+  const dt = e.timeStamp - gesture.t0;
+  gesture = null;
+  if (Math.hypot(dx, dy) < TAP_MAX_DIST && dt < TAP_MAX_TIME) doAction('rotate');
+  else if (dy > FLICK_MIN_DIST && dy > Math.abs(dx) * 1.5 && dt < TAP_MAX_TIME * 2) doAction('drop');
+});
+
+canvas.addEventListener('pointercancel', () => { gesture = null; });
 
 restartBtn.addEventListener('click', init);
 
