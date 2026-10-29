@@ -23,4 +23,6 @@ Puntos de `game.js` que conviene saber antes de editar:
 - **Entrada**: un único listener `keydown` usa `e.code` (no `e.key`).
 - **Puntuación/velocidad**: `LINE_SCORES[cleared] * level`; hard drop +2 por celda, soft drop +1; `dropInterval = max(100, 1000 - (level-1)*90)`, nivel cada 10 líneas.
 
+- **Tema claro/oscuro**: los colores de la UI son variables CSS en `:root` (oscuro, por defecto) y `:root[data-theme="light"]`. `#theme-toggle` (checkbox) llama a `applyTheme()`, que fija `data-theme` y cachea `--grid`/`--highlight` en `gridColor`/`highlightColor` para `drawGrid()`/`drawBlock()`; luego se fuerza `draw()` y `drawNext()` (necesario en pausa/game over). No se persiste. Cualquier color nuevo debe añadirse a ambos temas.
+
 Si cambias `COLS`, `ROWS` o `BLOCK`, actualiza también `width`/`height` del `<canvas id="board">` en `index.html` (`COLS*BLOCK` × `ROWS*BLOCK`). El tamaño de celda del canvas de vista previa (`NB = 30`) está fijo dentro de `drawNext()`.
