@@ -56,7 +56,12 @@ body {
   flex-direction: column;
   gap: 16px;
   min-height: 100vh;
+  min-height: 100dvh;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .title {
@@ -251,4 +256,97 @@ kbd {
 .theme-switch input:focus-visible + .switch-track {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---- Controles táctiles (ocultos en escritorio) ---- */
+.touch-controls {
+  display: none;
+}
+
+.touch-controls button {
+  min-height: 52px;
+  background: var(--kbd-bg);
+  color: var(--text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 10px;
+  font-size: 24px;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+.touch-controls button:active {
+  background: var(--accent);
+  color: var(--btn-text);
+}
+
+/* ---- Móvil / táctil (vista vertical) ---- */
+@media (max-width: 640px), (pointer: coarse) {
+  :root {
+    --board-w: min(calc(100vw - 24px), 27vh);
+    --board-w: min(calc(100vw - 24px), 27dvh);
+    --panel-w: min(calc(100vw - 24px), 320px); /* panel y botones, más anchos que el tablero */
+  }
+
+  body {
+    justify-content: flex-start;
+    gap: 8px;
+    padding: calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .title {
+    font-size: 24px;
+    letter-spacing: 8px;
+    padding-left: 8px;
+  }
+
+  .theme-switch {
+    position: absolute;
+    top: calc(8px + env(safe-area-inset-top));
+    right: 8px;
+  }
+
+  .wrapper {
+    width: var(--board-w);
+  }
+
+  .game-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #board {
+    width: var(--board-w);
+    height: auto;
+    aspect-ratio: 1 / 2;
+    touch-action: none;
+  }
+
+  .panel {
+    order: -1;
+    width: var(--panel-w);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .panel-section { gap: 2px; }
+  .value { font-size: 18px; }
+
+  #next-canvas {
+    width: 56px;
+    height: 56px;
+  }
+
+  .controls { display: none; }
+
+  .touch-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: var(--panel-w);
+    margin-top: 4px;
+  }
 }
